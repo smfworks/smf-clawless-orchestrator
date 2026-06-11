@@ -38,13 +38,59 @@ local/cloud model later.
    consolidation)     Sentinel Code, audit)
 ```
 
+## Setup
+
+Requires **Python 3.10+**. No third-party packages are needed to run (offline
+mock LLM); `pytest` is the only dev dependency.
+
+```bash
+# 1. clone
+git clone https://github.com/smfworks/smf-clawless-orchestrator.git
+cd smf-clawless-orchestrator
+
+# 2. (recommended) create a virtual environment
+python -m venv .venv
+# Windows:  .venv\Scripts\activate
+# macOS/Linux:  source .venv/bin/activate
+
+# 3. install (editable) with the `clawmes` CLI + dev tools
+pip install -e ".[dev]"
+```
+
+That's it — everything runs offline with a deterministic mock LLM, no API keys.
+
 ## Quick start
 
 ```bash
-cd clawmes-orchestrator
 python demo.py            # end-to-end demo (mock LLM, offline)
-python -m pytest -q       # 18 tests
+pytest -q                 # 18 tests
 ```
+
+## CLI
+
+After `pip install -e .` the `clawmes` command is available (or run
+`python -m clawmes.cli ...` without installing):
+
+```bash
+clawmes demo                                  # run the bundled demo
+clawmes run "research AI orchestration papers and propose integrations"
+clawmes run "large parallel Kalshi prediction" --size 50 --topology emergent
+clawmes run "<goal>" --max-tokens 80000 --max-agents 200
+clawmes --help
+```
+
+| Command | What it does |
+|---|---|
+| `clawmes run "<goal>"` | Supervisor designs a swarm, spawns it, prints synthesis + dashboard |
+| `clawmes run ... --size N --topology {hierarchical,flat,emergent}` | override the designed profile |
+| `clawmes run ... --max-tokens N --max-agents N` | set governance budgets |
+| `clawmes demo` | run the full bundled demo |
+
+## Tests & CI
+
+`pytest -q` runs the 18-test suite. GitHub Actions
+(`.github/workflows/ci.yml`) runs tests on Python 3.10–3.12 plus a demo/CLI
+smoke test on every push and PR to `main`.
 
 ## What maps to the spec
 
