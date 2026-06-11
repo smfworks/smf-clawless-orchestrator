@@ -59,6 +59,48 @@ pip install -e ".[dev]"
 
 That's it — everything runs offline with a deterministic mock LLM, no API keys.
 
+## Configure a model provider
+
+Clawmes mirrors **OpenClaw's onboarding model**. Run the wizard to pick a
+provider and model — it's offered automatically on first use, or run it anytime:
+
+```bash
+clawmes onboard
+```
+
+The wizard walks you through:
+1. **Existing-config detection** — Keep / Modify / Reset (like `openclaw onboard`).
+2. **Pick a provider** — Ollama · OpenRouter · GitHub Models · OpenAI · Anthropic · Custom (OpenAI-compatible).
+3. **Pick a model** — suggestions per provider (Ollama models are auto-discovered from the local host), or enter one manually.
+4. **Key storage** — environment-variable reference (recommended; nothing secret on disk) or paste-now (stored in `~/.clawmes/auth-profiles.json`, gitignored).
+
+Config is written OpenClaw-style to `~/.clawmes/clawmes.json` (override the dir
+with `CLAWMES_HOME`):
+
+```json
+{
+  "agents": { "defaults": { "model": "openrouter/openai/gpt-4o-mini" } },
+  "providers": {
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "compatibility": "openai",
+      "keyRef": { "source": "env", "id": "OPENROUTER_API_KEY" }
+    }
+  }
+}
+```
+
+Non-interactive (scripts/CI):
+
+```bash
+clawmes onboard --provider ollama --model llama3.1
+clawmes onboard --provider openrouter --model "openai/gpt-4o-mini"   # uses OPENROUTER_API_KEY
+```
+
+**Model selection (`CLAWMES_LLM`):** `auto` (default — use the configured
+provider if onboarded, else offline mock) · `mock` (always offline) · `real`
+(always use the provider).
+
 ## Quick start
 
 ```bash

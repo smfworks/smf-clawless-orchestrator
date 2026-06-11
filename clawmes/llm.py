@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import os
-import textwrap
 from dataclasses import dataclass, field
+
+from . import config as cfg
+from .providers import CATALOG, chat
 
 
 @dataclass
@@ -37,10 +39,15 @@ class LLMClient:
         ``CLAWMES_LLM`` when not set explicitly.
     """
     model: str = "clawmes-local"
-    mode: str = field(default_factory=lambda: os.environ.get("CLAWMES_LLM", "mock"))
+    mode: str = field(default_factory=lambda: os.environ.get("CLAWMES_LLM", "auto"))
+
+    def _effective_mode(self) -> str:
+        if self.mode in ("mock", "real"):
+            return self.mode
+        return "real" if cfg.is_configured() else "mock"  # auto
 
     def complete(self, prompt: str, system: str | None = None) -> tuple[str, Usage]:
-        if self.mode == "real":
+        if self._effective_mode() == "real":
             return self._complete_real(prompt, system)
         return self._complete_mock(prompt, system)
 
@@ -99,17 +106,32 @@ class LLMClient:
 
     # ------------------------------------------------------------------ real
     def _complete_real(self, prompt: str, system: str | None) -> tuple[str, Usage]:
-        """Plug your local LLM (e.g. llama.cpp/Ollama) or cloud fallback here.
+        """Call the provider configured via `clawmes onboard`.
 
-        Intentionally raises until wired so a mis-set env fails loud rather
-        than silently degrading.
+        Returns (text, Usage) so swarm token budgeting still works; usage is
+        estimated from text length (~4 chars/token).
         """
-        raise NotImplementedError(
-            textwrap.dedent(
-                """
-                Real LLM backend not wired. Set CLAWMES_LLM=mock for offline runs,
-                or implement LLMClient._complete_real with your provider call and
-                return (text, Usage(prompt_tokens=..., completion_tokens=...)).
-                """
-            ).strip()
+        model_ref = cfg.get_default_model()
+        if not model_ref:
+            raise RuntimeError(
+                "No provider configured. Run 'clawmes onboard' to pick a "
+                "provider and model (or set CLAWMES_LLM=mock for offline use)."
+            )
+        provider_id, model = cfg.split_model_ref(model_ref)
+        provider = CATALOG.get(provider_id)
+        entry = cfg.provider_entry(provider_id) or {}
+        if not provider:
+            raise RuntimeError(f"Unknown provider '{provider_id}' in config.")
+        api_key = cfg.resolve_api_key(provider_id)
+        if provider.needs_key and not api_key:
+            raise RuntimeError(
+                f"Missing API key for '{provider_id}'. Set {provider.key_env} or "
+                f"re-run 'clawmes onboard' and paste the key."
+            )
+        text = chat(provider=provider, model=model, prompt=prompt, system=system,
+                    api_key=api_key, base_url=entry.get("baseUrl"))
+        usage = Usage(
+            prompt_tokens=self._estimate_tokens((system or "") + prompt),
+            completion_tokens=self._estimate_tokens(text),
         )
+        return text, usage

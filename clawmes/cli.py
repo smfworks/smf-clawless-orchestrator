@@ -15,6 +15,8 @@ import asyncio
 import sys
 
 from . import Supervisor, Budget, SwarmProfile
+from . import config as cfg
+from . import onboard as onboard_mod
 from .profiles import Topology
 
 
@@ -59,6 +61,19 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_onboard(args: argparse.Namespace) -> int:
+    if args.provider and args.model:
+        summary = onboard_mod.run_noninteractive(
+            args.provider, args.model, base_url=args.base_url,
+            api_key=args.api_key, use_env_ref=not args.api_key,
+        )
+        print(f"Configured (non-interactive): model = {summary['model']}")
+        print(f"Config written to: {cfg.config_path()}")
+        return 0
+    onboard_mod.run()
+    return 0
+
+
 def cmd_demo(_args: argparse.Namespace) -> int:
     import runpy
     import os
@@ -84,12 +99,35 @@ def build_parser() -> argparse.ArgumentParser:
 
     pd = sub.add_parser("demo", help="run the bundled end-to-end demo")
     pd.set_defaults(func=cmd_demo)
+
+    po = sub.add_parser("onboard", help="pick a model provider + model (interactive)")
+    po.add_argument("--provider", choices=["ollama", "openrouter", "github",
+                                           "openai", "anthropic", "custom"],
+                    help="non-interactive: provider id")
+    po.add_argument("--model", help="non-interactive: model id")
+    po.add_argument("--base-url", default=None, help="non-interactive: custom base URL")
+    po.add_argument("--api-key", default=None,
+                    help="non-interactive: paste key (else an env reference is used)")
+    po.set_defaults(func=cmd_onboard)
     return parser
+
+
+def _maybe_first_run_onboard(command: str) -> None:
+    """Offer onboarding on first use when nothing is configured (TTY only)."""
+    if command in ("onboard", "demo"):
+        return
+    if cfg.is_configured() or not sys.stdin.isatty():
+        return
+    print("No model provider configured yet. Clawmes will run in OFFLINE MOCK mode.")
+    ans = input("Run setup now to pick a provider (Ollama/OpenRouter/GitHub/...)? [y/N]: ").strip().lower()
+    if ans == "y":
+        onboard_mod.run()
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    _maybe_first_run_onboard(args.command)
     return args.func(args)
 
 
