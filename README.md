@@ -114,6 +114,7 @@ After `pip install -e .` the `clawmes` command is available (or run
 `python -m clawmes.cli ...` without installing):
 
 ```bash
+clawmes tui                                   # interactive full-screen menu UI
 clawmes demo                                  # run the bundled demo
 clawmes run "research AI orchestration papers and propose integrations"
 clawmes run "large parallel Kalshi prediction" --size 50 --topology emergent
@@ -123,6 +124,7 @@ clawmes --help
 
 | Command | What it does |
 |---|---|
+| `clawmes tui` | launch the **interactive terminal UI** (menu-driven, stdlib-only) |
 | `clawmes run "<goal>"` | Supervisor designs a swarm, spawns it, prints synthesis + dashboard |
 | `clawmes run ... --size N --topology {hierarchical,flat,emergent}` | override the designed profile |
 | `clawmes run ... --max-tokens N --max-agents N` | set governance budgets |
