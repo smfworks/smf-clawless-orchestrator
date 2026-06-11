@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 
 from . import Supervisor, Budget, SwarmProfile
@@ -124,6 +125,8 @@ def build_parser() -> argparse.ArgumentParser:
 def _maybe_first_run_onboard(command: str) -> None:
     """Offer onboarding on first use when nothing is configured (TTY only)."""
     if command in ("onboard", "demo", "tui"):
+        return
+    if os.environ.get("CLAWMES_LLM"):   # explicit mode (mock/real/auto) — respect it
         return
     if cfg.is_configured() or not sys.stdin.isatty():
         return
