@@ -1,0 +1,11 @@
+# Clawmes Orchestrator runs on the Python standard library only (offline mock).
+# Optional dev/extension dependencies are listed below but not required to run.
+
+# --- dev ---
+pytest>=7.0
+
+# --- optional production extensions (uncomment as you wire them) ---
+# ollama            # or your local LLM client of choice
+# sentence-transformers   # real embeddings to replace the mock vectorizer
+# chromadb          # or any vector store for semantic memory
+# docker            # Docker/Orgo-style per-agent sandboxing
